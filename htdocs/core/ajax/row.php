@@ -67,7 +67,7 @@ print '<!-- Ajax page called with url '.dol_escape_htmltag($_SERVER["PHP_SELF"])
 
 // Registering the location of boxes
 if (GETPOST('roworder', 'alpha', 3) && GETPOST('table_element_line', 'aZ09', 3)
-	&& GETPOSTINT('fk_element', 3) && GETPOSTINT('element_id', 3)) {
+	&& GETPOST('fk_element', 'aZ09', 3) && GETPOSTINT('element_id', 3)) {
 	$roworder = GETPOST('roworder', 'alpha', 3);
 	$table_element_line = GETPOST('table_element_line', 'aZ09', 3);
 	$fk_element = GETPOST('fk_element', 'aZ09', 3);
