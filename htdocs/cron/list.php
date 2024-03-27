@@ -606,7 +606,6 @@ if ($num > 0) {
 		print $form->textwithpicto($text, $texttoshow, 1);
 		print '</td>';
 
-		// Frequency
 		$s = '';
 		if ($obj->unitfrequency == "60") {
 			$s = ($obj->frequency)." ".$langs->trans('MinuteShort');

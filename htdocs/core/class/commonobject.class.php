@@ -2222,9 +2222,8 @@ abstract class CommonObject
 	/**
 	 *      Load properties id_previous and id_next by comparing $fieldid with $this->ref
 	 *
-	 *      @param	string	$filter		Optional SQL filter. Use SQL or Universal Search Filter.
-	 *      							Example: "(t.field1 = 'aa' OR t.field2 = 'bb')". Do not allow user input data here with this syntax.
-	 *      							Example: "((t.field1:=:'aa') OR (t.field2:=:'bb'))".
+	 *      @param	string	$filter		Optional SQL filter. Example: "(t.field1 = 'aa' OR t.field2 = 'bb')". Do not allow user input data here.
+	 *      							Use SQL and not Universal Search Filter. @TODO Replace this with an USF string after changing all ->next_prev_filter
 	 *	 	@param  string	$fieldid   	Name of field to use for the select MAX and MIN
 	 *		@param	int		$nodbprefix	Do not include DB prefix to forge table name
 	 *      @return int         		Return integer <0 if KO, >0 if OK
@@ -2284,21 +2283,12 @@ abstract class CommonObject
 		if ($restrictiononfksoc == 2 && !$user->hasRight('societe', 'client', 'voir') && !$socid) {
 			$sql .= " AND (sc.fk_user = ".((int) $user->id).' OR te.fk_soc IS NULL)';
 		}
-
-		$filtermax = $filter;
-
-		// Manage filter
-		$errormessage = '';
-		$tmpsql = forgeSQLFromUniversalSearchCriteria($filtermax, $errormessage);
-		if ($errormessage) {
-			if (!preg_match('/^\s*AND/i', $filtermax)) {
+		if (!empty($filter)) {
+			if (!preg_match('/^\s*AND/i', $filter)) {
 				$sql .= " AND ";
 			}
-			$sql .= $filtermax;
-		} else {
-			$sql .= $tmpsql;
+			$sql .= $filter;
 		}
-
 		if (isset($this->ismultientitymanaged) && !is_numeric($this->ismultientitymanaged)) {
 			$tmparray = explode('@', $this->ismultientitymanaged);
 			$sql .= " AND te.".$tmparray[0]." = ".($tmparray[1] == "societe" ? "s" : "parenttable").".rowid"; // If we need to link to this table to limit select to entity
@@ -2368,23 +2358,12 @@ abstract class CommonObject
 		if ($restrictiononfksoc == 2 && !$user->hasRight('societe', 'client', 'voir') && !$socid) {
 			$sql .= " AND (sc.fk_user = ".((int) $user->id).' OR te.fk_soc IS NULL)';
 		}
-
-		$filtermin = $filter;
-
-		// Manage filter
-		$errormessage = '';
-		$tmpsql = forgeSQLFromUniversalSearchCriteria($filtermin, $errormessage);
-		if ($errormessage) {
-			if (!preg_match('/^\s*AND/i', $filtermin)) {
-				$sql .= " AND ";
+		if (!empty($filter)) {
+			if (!preg_match('/^\s*AND/i', $filter)) {
+				$sql .= " AND "; // For backward compatibility
 			}
-			$sql .= $filtermin;
-
-			$filtermin = '';
-		} else {
-			$sql .= $tmpsql;
+			$sql .= $filter;
 		}
-
 		if (isset($this->ismultientitymanaged) && !is_numeric($this->ismultientitymanaged)) {
 			$tmparray = explode('@', $this->ismultientitymanaged);
 			$sql .= " AND te.".$tmparray[0]." = ".($tmparray[1] == "societe" ? "s" : "parenttable").".rowid"; // If we need to link to this table to limit select to entity

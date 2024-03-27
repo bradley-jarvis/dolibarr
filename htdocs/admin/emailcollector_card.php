@@ -402,8 +402,6 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 			require_once DOL_DOCUMENT_ROOT.'/includes/webklex/php-imap/vendor/autoload.php';
 
 			if ($object->acces_type == 1) {
-				dol_syslog("Scan IMAP with authentication mode = OAUTH2");
-
 				// Mode OAUth2 with PHP-IMAP
 				require_once DOL_DOCUMENT_ROOT.'/core/lib/oauth.lib.php';
 
@@ -462,7 +460,6 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 						$tokenobj->setRefreshToken($refreshtoken);
 						$storage->storeAccessToken($OAUTH_SERVICENAME, $tokenobj);
 					}
-
 					$tokenobj = $storage->retrieveAccessToken($OAUTH_SERVICENAME);
 					if (is_object($tokenobj)) {
 						$token = $tokenobj->getAccessToken();
@@ -492,8 +489,6 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 					'authentication' => "oauth",
 				]);
 			} else {
-				dol_syslog("Scan IMAP with authentication mode = PASS");
-
 				// Mode login/pass with PHP-IMAP
 				$cm = new ClientManager();
 				$client = $cm->make([
@@ -521,11 +516,8 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 					// See github.com/Webklex/php-imap/issues/81
 					$client->connect();
 
-					// Uncomment this to output debug info
-					//$client->getConnection()->enableDebug();	// Add debug
-
 					$f = $client->getFolders(false, $object->source_directory);
-					if ($f) {	// $f is Webklex\PHPIMAP\Support\FolderCollection
+					if ($f->total() >= 1) {
 						$folder = $f[0];
 						if ($folder instanceof Webklex\PHPIMAP\Folder) {
 							$nbemail = $folder->examine()["exists"];
@@ -552,8 +544,8 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 						$connectstringtarget = $connectstringserver.$object->getEncodedUtf7($targetdir);
 					}
 
-					$timeoutconnect = getDolGlobalString('MAIN_USE_CONNECT_TIMEOUT', 5);
-					$timeoutread = getDolGlobalString('MAIN_USE_RESPONSE_TIMEOUT', 20);
+					$timeoutconnect = !getDolGlobalString('MAIN_USE_CONNECT_TIMEOUT') ? 5 : $conf->global->MAIN_USE_CONNECT_TIMEOUT;
+					$timeoutread = !getDolGlobalString('MAIN_USE_RESPONSE_TIMEOUT') ? 20 : $conf->global->MAIN_USE_RESPONSE_TIMEOUT;
 
 					dol_syslog("imap_open connectstring=".$connectstringsource." login=".$object->login." password=".$object->password." timeoutconnect=".$timeoutconnect." timeoutread=".$timeoutread);
 

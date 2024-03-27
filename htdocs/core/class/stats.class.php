@@ -160,12 +160,8 @@ abstract class Stats
 				dol_mkdir($conf->user->dir_temp);
 			}
 			$fp = fopen($newpathofdestfile, 'w');
-			if ($fp) {
-				fwrite($fp, json_encode($data));
-				fclose($fp);
-			} else {
-				dol_syslog("Failed to save cache file ".$newpathofdestfile, LOG_WARNING);
-			}
+			fwrite($fp, json_encode($data));
+			fclose($fp);
 			dolChmod($newpathofdestfile);
 
 			$this->lastfetchdate[get_class($this).'_'.__FUNCTION__] = $nowgmt;

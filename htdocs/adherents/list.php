@@ -72,14 +72,12 @@ $search_phone_perso = GETPOST("search_phone_perso", 'alpha');
 $search_phone_mobile = GETPOST("search_phone_mobile", 'alpha');
 $search_type 		= GETPOST("search_type", 'alpha');
 $search_email 		= GETPOST("search_email", 'alpha');
-$search_categ 		= GETPOST("search_categ", 'intcomma');
+$search_categ 		= GETPOSTINT("search_categ");
 $search_morphy 		= GETPOST("search_morphy", 'alpha');
 $search_import_key  = trim(GETPOST("search_import_key", 'alpha'));
 
+$catid 		= GETPOSTINT("catid");
 $socid 		= GETPOSTINT('socid');
-if (GETPOSTINT('catid') && empty($search_categ)) {
-	$search_categ = GETPOSTINT('catid');
-}
 
 $search_filter 		= GETPOST("search_filter", 'alpha');
 $search_status 		= GETPOST("search_status", 'intcomma');  // status
@@ -402,7 +400,7 @@ $morecss = array();
 
 // Build and execute select
 // --------------------------------------------------------------------
-if (!empty($search_categ) && $search_categ > 0) {
+if ((!empty($search_categ) && $search_categ > 0) || !empty($catid)) {
 	$sql = "SELECT DISTINCT";
 } else {
 	$sql = "SELECT";
@@ -444,6 +442,10 @@ $sql .= " LEFT JOIN ".MAIN_DB_PREFIX."societe as s on (s.rowid = d.fk_soc)";
 // SQL Alias adherent_type
 $sql .= ", ".MAIN_DB_PREFIX."adherent_type as t";
 $sql .= " WHERE d.fk_adherent_type = t.rowid";
+
+if ($catid && empty($search_categ)) {
+	$search_categ = $catid;
+}
 
 $searchCategoryContactList = $search_categ ? array($search_categ) : array();
 $searchCategoryContactOperator = 0;
@@ -490,8 +492,6 @@ if ($search_filter == 'waitingsubscription') {
 	$sql .= " AND (datefin IS NULL AND t.subscription = '1')";
 }
 if ($search_filter == 'uptodate') {
-	//$sql .= " AND (datefin >= '".$db->idate($now)."')";
-	// Up to date subscription OR no subscription required
 	$sql .= " AND (datefin >= '".$db->idate($now)."' OR (datefin IS NULL AND t.subscription = '0'))";
 }
 if ($search_filter == 'outofdate') {
@@ -1207,11 +1207,12 @@ while ($i < $imaxinloop) {
 
 	$memberstatic->id = $obj->rowid;
 	$memberstatic->ref = $obj->ref;
-	$memberstatic->civility_code = $obj->civility;
+	$memberstatic->civility_id = $obj->civility;
 	$memberstatic->login = $obj->login;
 	$memberstatic->lastname = $obj->lastname;
 	$memberstatic->firstname = $obj->firstname;
 	$memberstatic->gender = $obj->gender;
+	$memberstatic->statut = $obj->status;
 	$memberstatic->status = $obj->status;
 	$memberstatic->datefin = $datefin;
 	$memberstatic->socid = $obj->fk_soc;
@@ -1287,10 +1288,10 @@ while ($i < $imaxinloop) {
 				$totalarray['nbfield']++;
 			}
 		}
-		// Title/Civility
+		// Civility
 		if (!empty($arrayfields['d.civility']['checked'])) {
 			print "<td>";
-			print dol_escape_htmltag($obj->civility);
+			print $obj->civility;
 			print "</td>\n";
 			if (!$i) {
 				$totalarray['nbfield']++;
@@ -1363,7 +1364,7 @@ while ($i < $imaxinloop) {
 		// Address
 		if (!empty($arrayfields['d.address']['checked'])) {
 			print '<td class="nocellnopadd tdoverflowmax200" title="'.dol_escape_htmltag($obj->address).'">';
-			print dol_escape_htmltag($obj->address);
+			print $obj->address;
 			print '</td>';
 			if (!$i) {
 				$totalarray['nbfield']++;
@@ -1372,7 +1373,7 @@ while ($i < $imaxinloop) {
 		// Zip
 		if (!empty($arrayfields['d.zip']['checked'])) {
 			print '<td class="nocellnopadd">';
-			print dol_escape_htmltag($obj->zip);
+			print $obj->zip;
 			print '</td>';
 			if (!$i) {
 				$totalarray['nbfield']++;
@@ -1381,7 +1382,7 @@ while ($i < $imaxinloop) {
 		// Town
 		if (!empty($arrayfields['d.town']['checked'])) {
 			print '<td class="nocellnopadd">';
-			print dol_escape_htmltag($obj->town);
+			print $obj->town;
 			print '</td>';
 			if (!$i) {
 				$totalarray['nbfield']++;
@@ -1389,9 +1390,7 @@ while ($i < $imaxinloop) {
 		}
 		// State / County / Departement
 		if (!empty($arrayfields['state.nom']['checked'])) {
-			print "<td>";
-			print dol_escape_htmltag($obj->state_name);
-			print "</td>\n";
+			print "<td>".$obj->state_name."</td>\n";
 			if (!$i) {
 				$totalarray['nbfield']++;
 			}
@@ -1409,7 +1408,7 @@ while ($i < $imaxinloop) {
 		// Phone pro
 		if (!empty($arrayfields['d.phone']['checked'])) {
 			print '<td class="nocellnopadd">';
-			print dol_print_phone($obj->phone);
+			print $obj->phone;
 			print '</td>';
 			if (!$i) {
 				$totalarray['nbfield']++;
@@ -1418,7 +1417,7 @@ while ($i < $imaxinloop) {
 		// Phone perso
 		if (!empty($arrayfields['d.phone_perso']['checked'])) {
 			print '<td class="nocellnopadd">';
-			print dol_print_phone($obj->phone_perso);
+			print $obj->phone_perso;
 			print '</td>';
 			if (!$i) {
 				$totalarray['nbfield']++;
@@ -1427,7 +1426,7 @@ while ($i < $imaxinloop) {
 		// Phone mobile
 		if (!empty($arrayfields['d.phone_mobile']['checked'])) {
 			print '<td class="nocellnopadd">';
-			print dol_print_phone($obj->phone_mobile);
+			print $obj->phone_mobile;
 			print '</td>';
 			if (!$i) {
 				$totalarray['nbfield']++;
@@ -1445,25 +1444,23 @@ while ($i < $imaxinloop) {
 		// End of subscription date
 		$datefin = $db->jdate($obj->datefin);
 		if (!empty($arrayfields['d.datefin']['checked'])) {
-			$s = '';
+			print '<td class="nowraponall center">';
 			if ($datefin) {
-				$s .= dol_print_date($datefin, 'day');
+				print dol_print_date($datefin, 'day');
 				if ($memberstatic->hasDelay()) {
 					$textlate = ' ('.$langs->trans("DateReference").' > '.$langs->trans("DateToday").' '.(ceil($conf->adherent->subscription->warning_delay / 60 / 60 / 24) >= 0 ? '+' : '').ceil($conf->adherent->subscription->warning_delay / 60 / 60 / 24).' '.$langs->trans("days").')';
-					$s .= " ".img_warning($langs->trans("SubscriptionLate").$textlate);
+					print " ".img_warning($langs->trans("SubscriptionLate").$textlate);
 				}
 			} else {
 				if (!empty($obj->subscription)) {
-					$s .= '<span class="opacitymedium">'.$langs->trans("SubscriptionNotReceived").'</span>';
+					print '<span class="opacitymedium">'.$langs->trans("SubscriptionNotReceived").'</span>';
 					if ($obj->status > 0) {
-						$s .= " ".img_warning();
+						print " ".img_warning();
 					}
 				} else {
-					$s .= '<span class="opacitymedium">'.$langs->trans("SubscriptionNotNeeded").'</span>';
+					print '&nbsp;';
 				}
 			}
-			print '<td class="nowraponall center tdoverflowmax150" title="'.dolPrintHTMLForAttribute(dol_string_nohtmltag($s)).'">';
-			print $s;
 			print '</td>';
 			if (!$i) {
 				$totalarray['nbfield']++;

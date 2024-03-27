@@ -54,6 +54,8 @@ class DolLogsCollector extends MessagesCollector
 	 */
 	public function __construct($path = null, $name = 'logs')
 	{
+		global $conf;
+
 		parent::__construct($name);
 
 		$this->nboflines = 0;
@@ -190,7 +192,7 @@ class DolLogsCollector extends MessagesCollector
 	}
 
 	/**
-	 * Search a string for log entries into the log file. Used when debug bar scan log file (very slow).
+	 * Search a string for log entries
 	 *
 	 * @param  string  $file       File
 	 * @return array               Lines of logs
@@ -199,7 +201,6 @@ class DolLogsCollector extends MessagesCollector
 	{
 		$pattern = "/\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}.*/";
 		$log_levels = $this->getLevels();
-		$matches = array();
 		preg_match_all($pattern, $file, $matches);
 		$log = array();
 		foreach ($matches as $lines) {
