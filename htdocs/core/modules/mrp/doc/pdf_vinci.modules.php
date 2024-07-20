@@ -411,7 +411,8 @@ class pdf_vinci extends ModelePDFMo
 				$bom = new BOM($this->db);
 				$bom -> fetch($object->fk_bom);
 
-				$nblines = count($bom->lines);
+				//$nblines = count($bom->lines);
+				$nblines = count($object->lines);
 
 				for ($i = 0; $i < $nblines; $i++) {
 					$curY = $nexY;
@@ -419,7 +420,7 @@ class pdf_vinci extends ModelePDFMo
 					$pdf->SetTextColor(0, 0, 0);
 
 					$prod = new Product($this->db);
-					$prod->fetch($bom->lines[$i]->fk_product);
+					$prod->fetch($object->lines[$i]->fk_product); //$bom->lines[$i]->fk_product);
 
 					// Define size of image if we need it
 					$imglinesize = array();
@@ -468,8 +469,12 @@ class pdf_vinci extends ModelePDFMo
 
 					if ($this->getColumnStatus('code')) {
 						$pdf->startTransaction(); //description
+
+						$code = $this->findBOMRef($object->fk_bom, $object->lines[$i]->fk_product);
+						$code = $prod->ref . ($code!=null ? "(".$code.")" : "");
+
 						//$this->printColDescContent($pdf, $curY, 'code', $object, $i, $outputlangs, $hideref, $hidedesc, $showsupplierSKU);
-						$this->printStdColumnContent($pdf, $curY, 'code', $prod->ref);
+						$this->printStdColumnContent($pdf, $curY, 'code', $code);
 
 						$pageposafter = $pdf->getPage();
 						$posyafter = $pdf->GetY();
@@ -477,7 +482,7 @@ class pdf_vinci extends ModelePDFMo
 							$pdf->rollbackTransaction(true);
 
 							//$this->printColDescContent($pdf, $curY, 'code', $object, $i, $outputlangs, $hideref, $hidedesc, $showsupplierSKU);
-							$this->printStdColumnContent($pdf, $curY, 'code', $prod->ref);
+							$this->printStdColumnContent($pdf, $curY, 'code', $code);
 
 							$pageposafter = $pdf->getPage();
 							$posyafter = $pdf->GetY();
@@ -518,7 +523,7 @@ class pdf_vinci extends ModelePDFMo
 
 					if ($this->getColumnStatus('desc')) {
 						$pdf->startTransaction(); //description
-						$des = $prod -> description;
+						$des = ($prod->type == Product::TYPE_SERVICE ? "Service" : "Product")." - ".$prod -> label;// . ($prod -> description?" - " . $prod -> description:"");
 						$descr = $des;//implode("<br>", $des);
 
 						$this->printStdColumnContent($pdf, $curY, 'desc', $descr);
@@ -572,7 +577,12 @@ class pdf_vinci extends ModelePDFMo
 					// Quantity
 					// Enough for 6 chars
 					if ($this->getColumnStatus('qty')) {
-						$qty = $bom->lines[$i]->qty;
+						// find bom quantity
+						$qty = $this->findBOMQuantity($object->fk_bom, $object->lines[$i]->fk_product);
+
+						$qty = (number_format($object->lines[$i]->qty/$object->qty, 4, '.', '')+0).
+							($prod->type == Product::TYPE_PRODUCT && $qty ? "(".$qty."%)":"");
+						//$bom->lines[$i]->qty / $bom->qty;
 						$this->printStdColumnContent($pdf, $curY, 'qty', $qty);
 						$nexY = max($pdf->GetY(), $nexY);
 					}
@@ -580,7 +590,7 @@ class pdf_vinci extends ModelePDFMo
 					// Quantity
 					// Enough for 6 chars
 					if ($this->getColumnStatus('qtytot')) {
-						$qtytot = $object->qty * $bom->lines[$i]->qty;
+						$qtytot = number_format($object->lines[$i]->qty, 4, '.', '')+0; //$object->qty * $bom->lines[$i]->qty / $bom->qty;
 						$this->printStdColumnContent($pdf, $curY, 'qtytot', $qtytot);
 						$nexY = max($pdf->GetY(), $nexY);
 					}
@@ -650,6 +660,52 @@ class pdf_vinci extends ModelePDFMo
 			$this->error = $langs->trans("ErrorConstantNotDefined", "SUPPLIER_OUTPUTDIR");
 			return 0;
 		}
+	}
+
+	/**
+	 * Find BOM Product Label
+	 *
+	 * @param  int     $fk_bom        BOM id
+	 * @param  int     $fk_product    Product ID
+	 * @return string                 Return BOM Product label
+	 */
+	protected function findBOMRef($fk_bom, $fk_product)
+	{
+		$result=null;
+
+		$bom = new BOM($this->db);
+		$bom->fetch($fk_bom);
+
+		foreach ($bom->lines as $line) {
+			if ($line->fk_product==$fk_product) $result = $bom->label;
+			elseif ($line->fk_bom_child > 0)
+				$result = $this->findBOMRef($line->fk_bom_child, $fk_product);
+			if ($result!=null) break;
+		}
+		return $result;
+	}
+
+	/**
+	 * Find BOM Product Quantity
+	 *
+	 * @param  int     $fk_bom        BOM id
+	 * @param  int     $fk_product    Product ID
+	 * @return int                    Return BOM Product quantity
+	 */
+	protected function findBOMQuantity($fk_bom, $fk_product)
+	{
+		$result=null;
+
+		$bom = new BOM($this->db);
+		$bom->fetch($fk_bom);
+
+		foreach ($bom->lines as $line) {
+			if ($line->fk_product==$fk_product) $result = $line->qty;
+			elseif ($line->fk_bom_child > 0)
+				$result = $this->findBOMQuantity($line->fk_bom_child, $fk_product);
+			if ($result!=null) break;
+		}
+		return $result;
 	}
 
 	// phpcs:disable PEAR.NamingConventions.ValidFunctionName.PublicUnderscore
@@ -1129,38 +1185,39 @@ class pdf_vinci extends ModelePDFMo
 
 		if ($resProdToMake > 0) {
 			// ref
-			$posy += 7;
-			$pdf->SetFont('', 'B', $default_font_size + 1);
+			$posy += 5;
+			$pdf->SetFont('', 'B', $default_font_size);
 			$pdf->SetXY($posx, $posy);
 			$pdf->SetTextColor(0, 0, 60);
-			$pdf->MultiCell($w, 3, $prodToMake->ref, '', 'R');
+			// dimensions
+			$dim = implode("x", array_filter(array($prodToMake->length, $prodToMake->width, $prodToMake->height)));
+			$pdf->MultiCell($w, 3, $prodToMake->ref.(!empty($dim)?" (".$dim.")":"")." x ".$object->qty, '', 'R');
 
 			// description
+			$posy += 5;
+			$pdf->SetFont('', 'B', $default_font_size);
+			$pdf->SetXY($posx, $posy);
+			$pdf->SetTextColor(0, 0, 60);
+			$pdf->MultiCell($w, 3, html_entity_decode($prodToMake->description), '', 'R', false, 1, '', '', true, 0, false, true, 51, 'T', true);
+			//$posy = $pdf->GetY() - 5;
+
+			// dimensions
+			//$array = array_filter(array($prodToMake->length, $prodToMake->width, $prodToMake->height));
+			//$dim = implode("x", $array);
+			//if (!empty($dim)) {
+				//$posy += 5;
+			//	$pdf->SetFont('', 'B', $default_font_size);
+			//	$pdf->SetXY($posx, $posy);
+			//	$pdf->SetTextColor(0, 0, 60);
+			//	$pdf->MultiCell($w, 3, $dim, '', 'R');
+			//}
+		} else {
 			$posy += 5;
 			$pdf->SetFont('', 'B', $default_font_size + 3);
 			$pdf->SetXY($posx, $posy);
 			$pdf->SetTextColor(0, 0, 60);
-			$pdf->MultiCell($w, 3, html_entity_decode($prodToMake->description), '', 'R', false, 1, '', '', true, 0, false, true, 51, 'T', true);
-			$posy = $pdf->GetY() - 5;
-
-			// dimensions
-			$array = array_filter(array($prodToMake->length, $prodToMake->width, $prodToMake->height));
-			$dim = implode("x", $array);
-			if (!empty($dim)) {
-				$posy += 5;
-				$pdf->SetFont('', 'B', $default_font_size + 3);
-				$pdf->SetXY($posx, $posy);
-				$pdf->SetTextColor(0, 0, 60);
-				$pdf->MultiCell($w, 3, $dim, '', 'R');
-			}
+			$pdf->MultiCell($w, 3, $outputlangs->transnoentities("QtyToProduce").": " .$object->qty, '', 'R');
 		}
-
-		$posy += 5;
-		$pdf->SetFont('', 'B', $default_font_size + 3);
-		$pdf->SetXY($posx, $posy);
-		$pdf->SetTextColor(0, 0, 60);
-		$pdf->MultiCell($w, 3, $outputlangs->transnoentities("QtyToProduce").": " .$object->qty, '', 'R');
-
 
 		$pdf->SetTextColor(0, 0, 60);
 		$usehourmin = 'day';
@@ -1430,7 +1487,7 @@ class pdf_vinci extends ModelePDFMo
 		$rank = $rank + 10;
 		$this->cols['qty'] = array(
 			'rank' => $rank,
-			'width' => 16, // in mm
+			'width' => 25, // in mm
 			'status' => true,
 			'title' => array(
 				'textkey' => 'Qty'

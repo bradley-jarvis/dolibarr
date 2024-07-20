@@ -242,7 +242,15 @@ class CUnits extends CommonDict
 					} elseif (strpos($key, 'date') !== false) {
 						$sqlwhere[] = $this->db->sanitize($key)." = '".$this->db->idate($value)."'";
 					} elseif ($key == 't.unit_type' || $key == 't.code' || $key == 't.short_label') {
-						$sqlwhere[] = $this->db->sanitize($key)." = '".$this->db->escape($value)."'";
+						if (is_array($value)) {
+							$tmp = array();
+							foreach ($value as $v) {
+								$tmp[] = "'".$this->db->escape($v)."'";
+							}
+							$sqlwhere[] = $this->db->sanitize($key)." IN (".implode(',', $tmp).")";
+						} else {
+							$sqlwhere[] = $this->db->sanitize($key)." = '".$this->db->escape($value)."'";
+						}
 					} else {
 						$sqlwhere[] = $this->db->sanitize($key)." LIKE '%".$this->db->escape($this->db->escapeforlike($value))."%'";
 					}

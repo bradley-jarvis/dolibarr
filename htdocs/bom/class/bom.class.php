@@ -1873,7 +1873,7 @@ class BOMLine extends CommonObjectLine
 		if ($this->efficiency < 0 || $this->efficiency > 1) {
 			$this->efficiency = 1;
 		}
-		if ($this->quantity <= 0) {
+		if ($this->qty <= 0) {
 			$this->error = 'Quantity must be greater than 0';
 			return -1;
 		}
@@ -2006,7 +2006,7 @@ class BOMLine extends CommonObjectLine
 			$this->efficiency = 1;
 		}
 
-		if ($this->quantity <= 0) {
+		if ($this->qty <= 0) {
 			$this->error = 'Quantity must be greater than 0';
 			return -1;
 		}

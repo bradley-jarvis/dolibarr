@@ -546,7 +546,7 @@ class FormProduct
 	 *  Units labels are defined in llx_c_units
 	 *
 	 *  @param  string		$name                Name of HTML field
-	 *  @param  string		$measuring_style     Unit to show: weight, size, surface, volume, time
+	 *  @param  string|array $measuring_style    Unit to show: weight, size, surface, volume, time, qty. Use string for one type or array for multiple types
 	 *  @param  string		$default             Preselected value
 	 *  @param  int|string	$adddefault			 1=Add empty unit called "Default", ''=Add empty value
 	 *  @param  int         $mode                1=Use short label as value, 0=Use rowid, 2=Use scale (power)
@@ -605,11 +605,12 @@ class FormProduct
 					$return .= ' selected';
 				}
 				$return .= '>';
-				if ($measuring_style == 'time') {
-					$return .= $langs->trans(ucfirst($lines->label));
-				} else {
-					$return .= $langs->trans($lines->label);
-				}
+				$return .= $langs->trans('unit'.$lines->code);
+				//if ($measuring_style == 'time') {
+				//	$return .= $langs->trans(ucfirst($lines->label));
+				//} else {
+				//	$return .= $langs->trans($lines->label);
+				//}
 				$return .= '</option>';
 			}
 			$return .= '</select>';

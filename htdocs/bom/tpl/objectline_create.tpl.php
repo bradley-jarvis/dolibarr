@@ -182,7 +182,7 @@ if ($filtertype != 1) {
 	$cUnit = new CUnits($this->db);
 	$fk_unit_default = $cUnit->getUnitFromCode('h', 'short_label', 'time');
 	print '<td class="bordertop nobottom nowrap linecolunit right">';
-	print  $formproduct->selectMeasuringUnits("fk_unit", "time", $fk_unit_default, 0, 0);
+	print  $formproduct->selectMeasuringUnits("fk_unit", array("time","qty"), $fk_unit_default, 0, 0);
 	print '</td>';
 
 	$coldisplay++;

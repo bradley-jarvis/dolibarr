@@ -91,7 +91,7 @@ if (GETPOSTINT('fk_bom') > 0) {
 	if ($action != 'add') {
 		// We force calling parameters if we are not in the submit of creation of MO
 		$_POST['fk_product'] = $objectbom->fk_product;
-		$_POST['qty'] = $objectbom->qty;
+		$_POST['qty'] = $_POST['qty']??$objectbom->qty;
 		$_POST['mrptype'] = $objectbom->bomtype;
 		$_POST['fk_warehouse'] = $objectbom->fk_warehouse;
 		$_POST['note_private'] = $objectbom->note_private;
@@ -475,7 +475,7 @@ if (($id || $ref) && $action == 'edit') {
 
 	print dol_get_fiche_head();
 
-	$object->fields['fk_bom']['disabled'] = 1;
+	//$object->fields['fk_bom']['disabled'] = 1;
 
 	print '<table class="border centpercent tableforfieldedit">'."\n";
 
@@ -528,6 +528,11 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 	// Confirmation to delete line
 	if ($action == 'deleteline') {
 		$formconfirm = $form->formconfirm($_SERVER["PHP_SELF"].'?id='.$object->id.'&lineid='.$lineid, $langs->trans('DeleteLine'), $langs->trans('ConfirmDeleteLine'), 'confirm_deleteline', '', 0, 1);
+	}
+
+	// Reload BOM to consume and produce
+	if ($action == 'reload') {
+		$object->createProduction($user, $notrigger);
 	}
 
 	// Confirmation of validation
@@ -774,11 +779,9 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 			//}
 
 			// Back to draft
-			if ($object->status == $object::STATUS_VALIDATED) {
-				if ($permissiontoadd) {
-					// TODO Add test that production has not started
-					print '<a class="butAction" href="'.$_SERVER['PHP_SELF'].'?id='.$object->id.'&action=confirm_setdraft&confirm=yes&token='.newToken().'">'.$langs->trans("SetToDraft").'</a>';
-				}
+			if ($object->status == $object::STATUS_VALIDATED && $permissiontoadd) {
+				// TODO Add test that production has not started
+				print '<a class="butAction" href="'.$_SERVER['PHP_SELF'].'?id='.$object->id.'&action=confirm_setdraft&confirm=yes&token='.newToken().'">'.$langs->trans("SetToDraft").'</a>';
 			}
 
 			// Modify
@@ -790,15 +793,22 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 				}
 			}
 
-			// Validate
-			if ($object->status == $object::STATUS_DRAFT) {
+			// Reload production lines from BOM, but this can only happen if MO is for BOM
+			if ($object->status == $object::STATUS_DRAFT && $object->fk_bom > 0) {
 				if ($permissiontoadd) {
-					if (empty($object->table_element_line) || (is_array($object->lines) && count($object->lines) > 0)) {
-						print '<a class="butAction" href="'.$_SERVER['PHP_SELF'].'?id='.$object->id.'&action=validate">'.$langs->trans("Validate").'</a>';
-					} else {
-						$langs->load("errors");
-						print '<a class="butActionRefused" href="" title="'.$langs->trans("ErrorAddAtLeastOneLineFirst").'">'.$langs->trans("Validate").'</a>';
-					}
+					print '<a class="butAction" href="'.$_SERVER["PHP_SELF"].'?id='.$object->id.'&action=reload">'.$langs->trans("Reload BOM").'</a>'."\n";
+				} else {
+					print '<a class="butActionRefused classfortooltip" href="#" title="'.dol_escape_htmltag($langs->trans("NotEnoughPermissions")).'">'.$langs->trans('Reload BOM').'</a>'."\n";
+				}
+			}
+
+			// Validate
+			if ($object->status == $object::STATUS_DRAFT && $permissiontoadd) {
+				if (empty($object->table_element_line) || (is_array($object->lines) && count($object->lines) > 0)) {
+					print '<a class="butAction" href="'.$_SERVER['PHP_SELF'].'?id='.$object->id.'&action=validate">'.$langs->trans("Validate").'</a>';
+				} else {
+					$langs->load("errors");
+					print '<a class="butActionRefused" href="" title="'.$langs->trans("ErrorAddAtLeastOneLineFirst").'">'.$langs->trans("Validate").'</a>';
 				}
 			}
 

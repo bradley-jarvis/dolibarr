@@ -155,7 +155,7 @@ if ($filtertype != 1) {
 } else {
 	$coldisplay++;
 	print '<td class="nobottom nowrap linecolunit right">';
-	print  $formproduct->selectMeasuringUnits("fk_unit", "time", ($line->fk_unit) ? $line->fk_unit : '', 0, 0);
+	print  $formproduct->selectMeasuringUnits("fk_unit", array("time","qty"), ($line->fk_unit) ? $line->fk_unit : '', 0, 0);
 	print '</td>';
 
 	$coldisplay++;

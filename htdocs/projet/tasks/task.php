@@ -706,7 +706,7 @@ if ($id > 0 || !empty($ref)) {
 		// List of actions on element
 		include_once DOL_DOCUMENT_ROOT.'/core/class/html.formactions.class.php';
 		$formactions = new FormActions($db);
-		$formactions->showactions($object, 'project_task', 0, 1, '', 10, 'withproject='.$withproject);
+		$formactions->showactions($object, 'task', 0, 1, '', 15, 'withproject='.((int) $withproject));
 
 		print '</div></div>';
 	}

@@ -517,8 +517,8 @@ llxHeader('', $langs->trans('Mo'), $help_url, '', 0, 0, $morejs);
 $newToken = newToken();
 
 // Part to show record
-if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'create'))) {
-	$res = $object->fetch_thirdparty();
+if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'create' && $action != 'reload'))) {
+		$res = $object->fetch_thirdparty();
 	$res = $object->fetch_optionals();
 
 	if (getDolGlobalString('STOCK_CONSUMPTION_FROM_MANUFACTURING_WAREHOUSE') && $object->fk_warehouse > 0) {
@@ -1008,13 +1008,13 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 						$alreadyconsumed = 0;
 						if (is_array($arrayoflines) && !empty($arrayoflines)) {
 							foreach ($arrayoflines as $line2) {
-								$alreadyconsumed += $line2['qty'];
+								$alreadyconsumed += price2num($line2['qty'], 'MS');
 							}
 						}
 						$suffix = '_' . $line->id;
 						print '<!-- Line to dispatch ' . $suffix . ' -->' . "\n";
 						// hidden fields for js function
-						print '<input id="qty_ordered' . $suffix . '" type="hidden" value="' . $line->qty . '">';
+						print '<input id="qty_ordered' . $suffix . '" type="hidden" value="' . price2num($line->qty, 'MS') . '">';
 						// Duration - Time spent
 						print '<input id="qty_dispatched' . $suffix . '" type="hidden" value="' . $alreadyconsumed . '">';
 						print '<tr>';
@@ -1027,7 +1027,7 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 
 						// Qty
 						print '<td class="right nowraponall">';
-						print '<input class="width40" name="qty_lineProduce" value="'. $line->qty.'">';
+						print '<input class="width40" name="qty_lineProduce" value="'. price2num($line->qty, 'MS').'">';
 						print '</td>';
 						// Unit
 						if (getDolGlobalInt('PRODUCT_USE_UNITS')) {
@@ -1048,7 +1048,7 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 							if ($tmpproduct->stock_reel < ($line->qty - $alreadyconsumed)) {
 								print img_warning($langs->trans('StockTooLow')).' ';
 							}
-							print '<span class="left">'. $tmpproduct->stock_reel  .' </span>';
+							print '<span class="left">'.price2num($tmpproduct->stock_reel, 'MS').' </span>';
 						}
 						print '</td>';
 
